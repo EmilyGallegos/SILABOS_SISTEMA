@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Sílabos - ULEAM</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Pantalla de Carga -->
+        <div v-if="isLoading" class="screen active">
+            <div class="loading-content">
+                <img src="img/LOGO.png" alt="Logo ULEAM" class="logo">
+                <h1>Sistema de Sílabos</h1>
+                <div class="spinner"></div>
+                <p>Cargando...</p>
+            </div>
+        </div>
+
+        <!-- Pantalla de Login -->
+        <div v-if="!isLoading && currentScreen === 'login'" class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <img src="img/LOGO.png" alt="Logo ULEAM" class="logo">
+                    <h1>Sistema de Sílabos</h1>
+                    <p>Universidad Laica Eloy Alfaro de Manabí</p>
+                </div>
+
+                <div v-if="message" class="alert alert-success">
+                    {{ message }}
+                </div>
+
+                <form @submit.prevent="handleLogin" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="login-email" 
+                            v-model="loginForm.email" 
+                            placeholder="usuario@uleam.edu.ec" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="login-password" 
+                            v-model="loginForm.password" 
+                            placeholder="Tu contraseña" 
+                            required
+                        >
+                    </div>
+
+                    <div v-if="error" class="alert alert-danger">
+                        {{ error }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary full-width" :disabled="loading">
+                        <span v-if="loading">Iniciando sesión...</span>
+                        <span v-else>Iniciar Sesión</span>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>¿No tienes una cuenta? 
+                        <a href="#" @click.prevent="currentScreen = 'register'">Regístrate aquí</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Registro -->
+        <div v-if="!isLoading && currentScreen === 'register'" class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <img src="img/LOGO.png" alt="Logo ULEAM" class="logo">
+                    <h1>Registro de Usuario</h1>
+                    <p>Únete al Sistema de Sílabos</p>
+                </div>
+
+                <form @submit.prevent="handleRegister" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-nombre">Nombre Completo</label>
+                        <input 
+                            type="text" 
+                            id="register-nombre" 
+                            v-model="registerForm.nombre" 
+                            placeholder="Tu nombre completo" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-email">Correo Electrónico</label>
+                        <input 
+                            type="email" 
+                            id="register-email" 
+                            v-model="registerForm.email" 
+                            placeholder="usuario@uleam.edu.ec" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-password">Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="register-password" 
+                            v-model="registerForm.password" 
+                            placeholder="Mínimo 6 caracteres" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-confirm-password">Confirmar Contraseña</label>
+                        <input 
+                            type="password" 
+                            id="register-confirm-password" 
+                            v-model="registerForm.confirmPassword" 
+                            placeholder="Repite tu contraseña" 
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-rol">Rol</label>
+                        <select id="register-rol" v-model="registerForm.rol" required>
+                            <option value="">Seleccionar rol</option>
+                            <option value="estudiante">Estudiante</option>
+                            <option value="docente">Docente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" v-if="registerForm.rol === 'estudiante'">
+                        <label for="register-carrera">Carrera</label>
+                        <select id="register-carrera" v-model="registerForm.carrera" required>
+                            <option value="">Seleccionar carrera</option>
+                            <option value="Tecnologías de la Información">Tecnologías de la Información</option>
+                            <option value="Ingeniería de Software">Ingeniería de Software</option>
+                        </select>
+                    </div>
+
+                    <div v-if="error" class="alert alert-danger">
+                        {{ error }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary full-width" :disabled="loading">
+                        <span v-if="loading">Registrando...</span>
+                        <span v-else>Registrarse</span>
+                    </button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>¿Ya tienes una cuenta? 
+                        <a href="#" @click.prevent="currentScreen = 'login'">Inicia sesión aquí</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard de Estudiantes -->
+        <div v-if="!isLoading && currentScreen === 'student-dashboard'" class="screen active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <img src="img/LOGO.png" alt="Logo ULEAM" class="logo-small">
+                    </div>
+                    <div class="header-center">
+                        <h1>Sistema de Sílabos - Estudiante</h1>
+                    </div>
+                    <div class="header-right">
+                        <span class="welcome-text">
+                            Bienvenido, <strong>{{ currentUser.nombre }}</strong> 
+                            <span class="badge badge-secondary">{{ currentUser.carrera }}</span>
+                        </span>
+                        <button @click="logout" class="btn btn-outline">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Búsqueda de Sílabos</h2>
+                        <p class="text-muted">Mostrando sílabos para: {{ currentUser.carrera }}</p>
+                    </div>
+                    <div class="card-content">
+                        <div class="filters-grid">
+                            <div class="form-group">
+                                <label for="filter-asignatura">Asignatura</label>
+                                <select id="filter-asignatura" v-model="filters.asignatura">
+                                    <option value="Todos">Todos</option>
+                                    <option v-for="asignatura in asignaturas" :key="asignatura" :value="asignatura">
+                                        {{ asignatura }}
+                                    </option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="filter-docente">Docente</label>
+                                <select id="filter-docente" v-model="filters.docente">
+                                    <option value="Todos">Todos</option>
+                                    <option v-for="docente in docentes" :key="docente" :value="docente">
+                                        {{ docente }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Asignatura</th>
+                                        <th>Docente</th>
+                                        <th>Carrera</th>
+                                        <th>Período</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="silabo in filteredSilabos" :key="silabo.id">
+                                        <td class="font-medium">{{ silabo.asignatura }}</td>
+                                        <td>{{ silabo.docente }}</td>
+                                        <td>
+                                            <span :class="getCarreraBadgeClass(silabo.carrera)">
+                                                {{ silabo.carrera }}
+                                            </span>
+                                        </td>
+                                        <td>{{ silabo.periodo }}</td>
+                                        <td>
+                                            <a :href="silabo.url" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.75rem;">
+                                                Ver Sílabo
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div v-if="filteredSilabos.length === 0" class="no-results">
+                                <p>No se encontraron sílabos con los filtros seleccionados.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="footer">
+                <p>&copy; 2025 GALLEGOS DELGADO EMILY STEFANYA</p>
+            </footer>
+        </div>
+
+        <!-- Panel de Docentes -->
+        <div v-if="!isLoading && currentScreen === 'teacher-panel'" class="screen active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <img src="img/LOGO.png" alt="Logo ULEAM" class="logo-small">
+                    </div>
+                    <div class="header-center">
+                        <h1>Panel de Docente</h1>
+                        <p>Gestión de Sílabos Académicos</p>
+                    </div>
+                    <div class="header-right">
+                        <span class="welcome-text">
+                            Bienvenido, <strong>{{ currentUser.nombre }}</strong> 
+                            <span class="badge badge-primary">Docente</span>
+                        </span>
+                        <button @click="logout" class="btn btn-outline">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="welcome-section">
+                    <h2>¡Bienvenido, {{ currentUser.nombre }}!</h2>
+                    <p>Desde aquí puedes gestionar todos tus sílabos académicos, crear nuevos contenidos y revisar el estado de tus publicaciones.</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Sílabos Publicados</span>
+                            <span class="stat-icon">📚</span>
+                        </div>
+                        <div class="stat-value">5</div>
+                        <div class="stat-description">Disponibles para estudiantes</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Borradores</span>
+                            <span class="stat-icon">📄</span>
+                        </div>
+                        <div class="stat-value">2</div>
+                        <div class="stat-description">En proceso de edición</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Total Sílabos</span>
+                            <span class="stat-icon">👥</span>
+                        </div>
+                        <div class="stat-value">7</div>
+                        <div class="stat-description">Todos los documentos</div>
+                    </div>
+                </div>
+
+                <div class="actions-grid">
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>➕ Crear Nuevo Sílabo</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Inicia la creación de un nuevo sílabo académico con nuestro formulario guiado.</p>
+                            <button @click="currentScreen = 'create-silabo'" class="btn btn-primary full-width">
+                                ➕ Crear Sílabo
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>📄 Mis Borradores</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Continúa editando tus sílabos guardados como borradores.</p>
+                            <button class="btn btn-outline full-width" disabled>
+                                📄 Ver Borradores (2)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>📚 Sílabos Publicados</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Revisa y gestiona todos tus sílabos ya publicados.</p>
+                            <button class="btn btn-outline full-width" disabled>
+                                📚 Ver Publicados (5)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="footer">
+                <p>&copy; 2025 GALLEGOS DELGADO EMILY STEFANYA</p>
+            </footer>
+        </div>
+
+        <!-- Panel de Administración -->
+        <div v-if="!isLoading && currentScreen === 'admin-panel'" class="screen active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <img src="img/LOGO.png" alt="Logo ULEAM" class="logo-small">
+                        <div>
+                            <h1>Panel de Administración</h1>
+                            <p>Control Total del Sistema</p>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <span class="welcome-text">
+                            Bienvenido, <strong>{{ currentUser.nombre }}</strong> 
+                            <span class="badge badge-danger">🛡️ Admin</span>
+                        </span>
+                        <button @click="logout" class="btn btn-outline">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="welcome-section">
+                    <h2>Panel de Control Administrativo</h2>
+                    <p>Gestiona usuarios, supervisa el sistema y mantén el control total de la plataforma de sílabos.</p>
+                </div>
+
+                <div class="stats-grid-4">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Total Usuarios</span>
+                            <span class="stat-icon">👥</span>
+                        </div>
+                        <div class="stat-value">{{ users.length }}</div>
+                        <div class="stat-description">Usuarios registrados</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Estudiantes</span>
+                            <span class="stat-icon">🎓</span>
+                        </div>
+                        <div class="stat-value">{{ getUsersByRole('estudiante').length }}</div>
+                        <div class="stat-description">
+                            TI: {{ getUsersByCarrera('Tecnologías de la Información').length }} | 
+                            SW: {{ getUsersByCarrera('Ingeniería de Software').length }}
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Docentes</span>
+                            <span class="stat-icon">📚</span>
+                        </div>
+                        <div class="stat-value">{{ getUsersByRole('docente').length }}</div>
+                        <div class="stat-description">Profesores activos</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-title">Administradores</span>
+                            <span class="stat-icon">🛡️</span>
+                        </div>
+                        <div class="stat-value">{{ getUsersByRole('admin').length }}</div>
+                        <div class="stat-description">Administradores del sistema</div>
+                    </div>
+                </div>
+
+                <div class="actions-grid">
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>👥 Gestión de Usuarios</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Administra todos los usuarios registrados en el sistema.</p>
+                            <button @click="showUsersTable = !showUsersTable" class="btn btn-primary full-width">
+                                {{ showUsersTable ? '👥 Ocultar Usuarios' : '👥 Gestionar Usuarios' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>👁️ Vista de Sistema</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Ve cómo los estudiantes interactúan con el sistema.</p>
+                            <button class="btn btn-outline full-width" disabled>
+                                👁️ Vista de Estudiante (Próximamente)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="card-header">
+                            <h3>🗄️ Base de Datos</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Gestiona y mantén la integridad de los datos del sistema.</p>
+                            <button @click="clearDatabase" class="btn btn-danger full-width">
+                                🗄️ Limpiar Base de Datos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Usuarios -->
+                <div v-if="showUsersTable" class="card">
+                    <div class="card-header">
+                        <h2>👥 Lista de Usuarios Registrados</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="alert">
+                            <strong>Total de usuarios registrados: {{ users.length }}</strong>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Correo</th>
+                                        <th>Rol</th>
+                                        <th>Carrera</th>
+                                        <th>Fecha Registro</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="user in users" :key="user.id">
+                                        <td class="font-medium">{{ user.nombre }}</td>
+                                        <td>{{ user.email }}</td>
+                                        <td>
+                                            <span :class="getRoleBadgeClass(user.rol)">
+                                                {{ getRoleDisplayName(user.rol) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span v-if="user.carrera" :class="getCarreraBadgeClass(user.carrera)">
+                                                {{ user.carrera === 'Tecnologías de la Información' ? 'TI' : 'SW' }}
+                                            </span>
+                                            <span v-else style="color: #9ca3af; font-size: 0.875rem;">N/A</span>
+                                        </td>
+                                        <td style="font-size: 0.875rem;">
+                                            {{ new Date(user.fechaRegistro).toLocaleDateString('es-ES', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            }) }}
+                                        </td>
+                                        <td>
+                                            <button v-if="user.id !== currentUser.id" 
+                                                    @click="deleteUser(user.id)" 
+                                                    class="btn btn-danger" 
+                                                    style="padding: 0.5rem; font-size: 0.75rem;">
+                                                🗑️
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div v-if="users.length === 0" class="no-results">
+                                <div class="no-users-content">
+                                    <span class="no-users-icon">👥</span>
+                                    <p>No hay usuarios registrados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="footer">
+                <p>&copy; 2025 GALLEGOS DELGADO EMILY STEFANYA</p>
+            </footer>
+        </div>
+
+        <!-- Formulario de Creación de Sílabos -->
+        <div v-if="!isLoading && currentScreen === 'create-silabo'" class="screen active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <img src="img/LOGO.png" alt="Logo ULEAM" class="logo-small">
+                        <h1>Formulario de Ingreso de Sílabo</h1>
+                    </div>
+                    <div class="header-right">
+                        <button @click="currentScreen = 'teacher-panel'" class="btn btn-outline">← Volver al Panel</button>
+                        <button @click="logout" class="btn btn-outline">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <form @submit.prevent="submitSilabo" class="silabo-form">
+                    <!-- Información General -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Información General</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="asignatura">Asignatura</label>
+                                    <input type="text" id="asignatura" v-model="silaboForm.asignatura" placeholder="Nombre de la asignatura" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="codigo">Código de la asignatura</label>
+                                    <input type="text" id="codigo" v-model="silaboForm.codigo" placeholder="Código" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="carrera">Carrera</label>
+                                    <input type="text" id="carrera" v-model="silaboForm.carrera" placeholder="Carrera" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ciclo">Ciclo</label>
+                                    <input type="text" id="ciclo" v-model="silaboForm.ciclo" placeholder="Ciclo académico" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="creditos">Créditos</label>
+                                    <input type="number" id="creditos" v-model="silaboForm.creditos" placeholder="Número de créditos" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="tipo_asignatura">Tipo de Asignatura</label>
+                                    <select id="tipo_asignatura" v-model="silaboForm.tipo_asignatura" required>
+                                        <option value="">Seleccionar tipo</option>
+                                        <option value="Teorica">Teórica</option>
+                                        <option value="Práctica">Práctica</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Justificación y Objetivos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Justificación y Objetivos</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="justificacion">Justificación del curso</label>
+                                <input type="text" id="justificacion" v-model="silaboForm.justificacion" placeholder="Justificación del curso">
+                            </div>
+                            <div class="form-group">
+                                <label for="objetivo_general">Objetivo general</label>
+                                <input type="text" id="objetivo_general" v-model="silaboForm.objetivo_general" placeholder="Objetivo general del curso">
+                            </div>
+
+                            <div class="objetivos-section">
+                                <h4>Objetivos específicos</h4>
+                                <div v-for="(objetivo, index) in silaboForm.objetivos" :key="index" class="objetivo-item">
+                                    <div class="form-grid-3">
+                                        <div class="form-group">
+                                            <label>Unidad temática</label>
+                                            <input type="text" v-model="objetivo.unidad" placeholder="Unidad temática">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Semanas</label>
+                                            <input type="text" v-model="objetivo.semanas" placeholder="Semanas">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Actividad asociada</label>
+                                            <input type="text" v-model="objetivo.actividad" placeholder="Actividad asociada">
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="removeObjetivo(index)" class="btn btn-danger" style="margin-top: 10px;">🗑️ Eliminar</button>
+                                </div>
+                                <button type="button" @click="addObjetivo" class="btn btn-outline">+ Agregar objetivo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metodología -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Metodología de Enseñanza</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="metodologia">Describe los métodos didácticos</label>
+                                <textarea id="metodologia" v-model="silaboForm.metodologia" placeholder="Describe los métodos didácticos que utilizarás" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evaluación -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Evaluación</h2>
+                        </div>
+                        <div class="card-content">
+                            <div v-for="(criterio, index) in silaboForm.criterios" :key="index" class="criterio-item">
+                                <div class="form-grid-3">
+                                    <div class="form-group">
+                                        <label>Criterio de evaluación</label>
+                                        <input type="text" v-model="criterio.nombre" placeholder="Criterio de evaluación">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Ponderación</label>
+                                        <input type="text" v-model="criterio.ponderacion" placeholder="Ponderación (%)">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Semana</label>
+                                        <input type="text" v-model="criterio.semana" placeholder="Semana">
+                                    </div>
+                                </div>
+                                <button type="button" @click="removeCriterio(index)" class="btn btn-danger" style="margin-top: 10px;">🗑️ Eliminar</button>
+                            </div>
+                            <button type="button" @click="addCriterio" class="btn btn-outline">+ Agregar criterio</button>
+                        </div>
+                    </div>
+
+                    <!-- Bibliografía -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Bibliografía</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="bibliografia_basica">Bibliografía básica</label>
+                                <input type="text" id="bibliografia_basica" v-model="silaboForm.bibliografia_basica" placeholder="Bibliografía básica">
+                            </div>
+                            <div class="form-group">
+                                <label for="bibliografia_complementaria">Bibliografía complementaria</label>
+                                <input type="text" id="bibliografia_complementaria" v-model="silaboForm.bibliografia_complementaria" placeholder="Bibliografía complementaria">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Archivos -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Archivos Adjunto</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="form-group">
+                                <label for="archivo_pdf">Subir archivo PDF</label>
+                                <input type="file" id="archivo_pdf" @change="handleFileUpload" accept=".pdf">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="form-actions">
+                                <button type="button" @click="saveDraft" class="btn btn-outline">
+                                    Guardar como borrador
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    Enviar a revisión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </main>
+
+            <footer class="footer">
+                <p>&copy; 2025 GALLEGOS DELGADO EMILY STEFANYA</p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    isLoading: true,
+                    currentScreen: 'login',
+                    currentUser: null,
+                    loginForm: {
+                        email: '',
+                        password: ''
+                    },
+                    registerForm: {
+                        nombre: '',
+                        email: '',
+                        password: '',
+                        confirmPassword: '',
+                        rol: '',
+                        carrera: ''
+                    },
+                    filters: {
+                        asignatura: 'Todos',
+                        docente: 'Todos'
+                    },
+                    error: '',
+                    message: '',
+                    loading: false,
+                    showUsersTable: false,
+                    silaboForm: {
+                        asignatura: '',
+                        codigo: '',
+                        carrera: '',
+                        ciclo: '',
+                        creditos: '',
+                        tipo_asignatura: '',
+                        justificacion: '',
+                        objetivo_general: '',
+                        objetivos: [
+                            {
+                                unidad: '',
+                                semanas: '',
+                                actividad: ''
+                            }
+                        ],
+                        metodologia: '',
+                        criterios: [
+                            {
+                                nombre: '',
+                                ponderacion: '',
+                                semana: ''
+                            }
+                        ],
+                        bibliografia_basica: '',
+                        bibliografia_complementaria: '',
+                        archivo_pdf: null
+                    },
+                    users: [
+                        {
+                            id: 'admin-1',
+                            nombre: 'Administrador Sistema',
+                            email: 'admin@uleam.edu.ec',
+                            password: 'admin123',
+                            rol: 'admin',
+                            fechaRegistro: new Date().toISOString()
+                        },
+                        {
+                            id: 'student-1',
+                            nombre: 'Juan Estudiante TI',
+                            email: 'juan.ti@uleam.edu.ec',
+                            password: '123456',
+                            rol: 'estudiante',
+                            carrera: 'Tecnologías de la Información',
+                            fechaRegistro: new Date().toISOString()
+                        },
+                        {
+                            id: 'student-2',
+                            nombre: 'María Estudiante SW',
+                            email: 'maria.sw@uleam.edu.ec',
+                            password: '123456',
+                            rol: 'estudiante',
+                            carrera: 'Ingeniería de Software',
+                            fechaRegistro: new Date().toISOString()
+                        },
+                        {
+                            id: 'teacher-1',
+                            nombre: 'Dr. Carlos Docente',
+                            email: 'carlos.docente@uleam.edu.ec',
+                            password: '123456',
+                            rol: 'docente',
+                            fechaRegistro: new Date().toISOString()
+                        }
+                    ],
+                    silabos: [
+                        {
+                            id: "1",
+                            asignatura: "Redes de Computadoras",
+                            docente: "Juan Pérez",
+                            carrera: "Tecnologías de la Información",
+                            periodo: "2024-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "2",
+                            asignatura: "Base de Datos",
+                            docente: "Juan Pérez",
+                            carrera: "Tecnologías de la Información",
+                            periodo: "2024-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "3",
+                            asignatura: "Minería de Datos",
+                            docente: "María González",
+                            carrera: "Tecnologías de la Información",
+                            periodo: "2023-II",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "4",
+                            asignatura: "Sistemas Digitales",
+                            docente: "Diego Tumbaco",
+                            carrera: "Tecnologías de la Información",
+                            period: "2024-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "5",
+                            asignatura: "Ingeniería de Software I",
+                            docente: "Carlos López",
+                            carrera: "Ingeniería de Software",
+                            periodo: "2024-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "6",
+                            asignatura: "Arquitectura de Software",
+                            docente: "Ana Martínez",
+                            carrera: "Ingeniería de Software",
+                            periodo: "2023-II",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "7",
+                            asignatura: "Desarrollo Web Avanzado",
+                            docente: "Genesis Delgado",
+                            carrera: "Ingeniería de Software",
+                            periodo: "2024-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "8",
+                            asignatura: "Metodologías Ágiles",
+                            docente: "Jaime Vera",
+                            carrera: "Ingeniería de Software",
+                            period: "2023-I",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        },
+                        {
+                            id: "9",
+                            asignatura: "Calidad de Software",
+                            docente: "Carelys Zambrano",
+                            carrera: "Ingeniería de Software",
+                            period: "2022-II",
+                            url: "https://aulavirtualmoodle.uleam.edu.ec/pluginfile.php/177801/mod_resource/content/1/TI_5_AplicacionesWebI_PatriciaQuirozPalma.pdf"
+                        }
+                    ]
+                }
+            },
+            computed: {
+                silabosPorCarrera() {
+                    if (!this.currentUser || this.currentUser.rol !== 'estudiante') return []
+                    return this.silabos.filter(s => s.carrera === this.currentUser.carrera)
+                },
+                asignaturas() {
+                    return [...new Set(this.silabosPorCarrera.map(s => s.asignatura))]
+                },
+                docentes() {
+                    return [...new Set(this.silabosPorCarrera.map(s => s.docente))]
+                },
+                filteredSilabos() {
+                    let filtered = this.silabosPorCarrera
+
+                    if (this.filters.asignatura !== 'Todos') {
+                        filtered = filtered.filter(s => s.asignatura === this.filters.asignatura)
+                    }
+
+                    if (this.filters.docente !== 'Todos') {
+                        filtered = filtered.filter(s => s.docente === this.filters.docente)
+                    }
+
+                    return filtered
+                }
+            },
+            mounted() {
+                // Simular carga inicial
+                setTimeout(() => {
+                    this.isLoading = false
+                    this.checkAuth()
+                }, 1000)
+            },
+            methods: {
+                async handleLogin() {
+                    this.loading = true
+                    this.error = ''
+                    
+                    // Simular delay
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    
+                    const user = this.users.find(u => 
+                        u.email === this.loginForm.email && 
+                        u.password === this.loginForm.password
+                    )
+                    
+                    if (user) {
+                        this.currentUser = user
+                        this.redirectByRole()
+                    } else {
+                        this.error = 'Credenciales incorrectas'
+                    }
+                    
+                    this.loading = false
+                },
+                async handleRegister() {
+                    this.loading = true
+                    this.error = ''
+                    
+                    // Validaciones
+                    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                        this.error = 'Las contraseñas no coinciden'
+                        this.loading = false
+                        return
+                    }
+                    
+                    if (this.registerForm.rol === 'estudiante' && !this.registerForm.carrera) {
+                        this.error = 'Debes seleccionar una carrera'
+                        this.loading = false
+                        return
+                    }
+                    
+                    // Verificar si el email ya existe
+                    if (this.users.some(u => u.email === this.registerForm.email)) {
+                        this.error = 'El correo ya está registrado'
+                        this.loading = false
+                        return
+                    }
+                    
+                    // Simular delay
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    
+                    const newUser = {
+                        id: Date.now().toString(),
+                        nombre: this.registerForm.nombre,
+                        email: this.registerForm.email,
+                        password: this.registerForm.password,
+                        rol: this.registerForm.rol,
+                        fechaRegistro: new Date().toISOString()
+                    }
+                    
+                    if (this.registerForm.rol === 'estudiante') {
+                        newUser.carrera = this.registerForm.carrera
+                    }
+                    
+                    this.users.push(newUser)
+                    this.message = 'Registro exitoso. Puedes iniciar sesión.'
+                    this.currentScreen = 'login'
+                    this.loading = false
+                },
+                redirectByRole() {
+                    if (!this.currentUser) {
+                        this.currentScreen = 'login'
+                        return
+                    }
+
+                    switch (this.currentUser.rol) {
+                        case 'estudiante':
+                            this.currentScreen = 'student-dashboard'
+                            break
+                        case 'docente':
+                            this.currentScreen = 'teacher-panel'
+                            break
+                        case 'admin':
+                            this.currentScreen = 'admin-panel'
+                            break
+                        default:
+                            this.currentScreen = 'login'
+                    }
+                },
+                logout() {
+                    this.currentUser = null
+                    this.currentScreen = 'login'
+                    this.message = 'Sesión cerrada exitosamente'
+                },
+                checkAuth() {
+                    // Aquí podrías verificar si hay una sesión guardada
+                    // Por ahora, siempre va al login
+                    this.currentScreen = 'login'
+                },
+                getCarreraBadgeClass(carrera) {
+                    return carrera === 'Tecnologías de la Información' ? 'badge badge-primary' : 'badge badge-secondary'
+                },
+                getUsersByRole(rol) {
+                    return this.users.filter(user => user.rol === rol)
+                },
+                getUsersByCarrera(carrera) {
+                    return this.users.filter(user => user.carrera === carrera)
+                },
+                getRoleBadgeClass(rol) {
+                    switch (rol) {
+                        case 'admin':
+                            return 'badge badge-danger'
+                        case 'docente':
+                            return 'badge badge-primary'
+                        case 'estudiante':
+                            return 'badge badge-secondary'
+                        default:
+                            return 'badge badge-secondary'
+                    }
+                },
+                getRoleDisplayName(rol) {
+                    switch (rol) {
+                        case 'admin':
+                            return 'Administrador'
+                        case 'docente':
+                            return 'Docente'
+                        case 'estudiante':
+                            return 'Estudiante'
+                        default:
+                            return rol
+                    }
+                },
+                deleteUser(userId) {
+                    if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                        this.users = this.users.filter(u => u.id !== userId)
+                        this.message = 'Usuario eliminado exitosamente'
+                    }
+                },
+                clearDatabase() {
+                    if (confirm('¿Estás seguro de que quieres limpiar toda la base de datos local?')) {
+                        this.users = []
+                        this.currentUser = null
+                        this.currentScreen = 'login'
+                        this.message = 'Base de datos limpiada exitosamente'
+                    }
+                },
+                // Métodos para el formulario de sílabos
+                addObjetivo() {
+                    this.silaboForm.objetivos.push({
+                        unidad: '',
+                        semanas: '',
+                        actividad: ''
+                    })
+                },
+                removeObjetivo(index) {
+                    if (this.silaboForm.objetivos.length > 1) {
+                        this.silaboForm.objetivos.splice(index, 1)
+                    }
+                },
+                addCriterio() {
+                    this.silaboForm.criterios.push({
+                        nombre: '',
+                        ponderacion: '',
+                        semana: ''
+                    })
+                },
+                removeCriterio(index) {
+                    if (this.silaboForm.criterios.length > 1) {
+                        this.silaboForm.criterios.splice(index, 1)
+                    }
+                },
+                handleFileUpload(event) {
+                    this.silaboForm.archivo_pdf = event.target.files[0]
+                },
+                saveDraft() {
+                    // Guardar como borrador
+                    alert('✅ El formulario ha sido guardado como borrador.')
+                    this.message = 'Formulario guardado como borrador exitosamente'
+                },
+                submitSilabo() {
+                    // Validar formulario
+                    if (!this.silaboForm.asignatura || !this.silaboForm.codigo || !this.silaboForm.carrera) {
+                        alert('Por favor completa los campos obligatorios')
+                        return
+                    }
+                    
+                    // Simular envío
+                    alert('Formulario enviado a revisión exitosamente')
+                    this.message = 'Sílabo enviado a revisión exitosamente'
+                    
+                    // Limpiar formulario
+                    this.resetSilaboForm()
+                    
+                    // Volver al panel de docente
+                    this.currentScreen = 'teacher-panel'
+                },
+                resetSilaboForm() {
+                    this.silaboForm = {
+                        asignatura: '',
+                        codigo: '',
+                        carrera: '',
+                        ciclo: '',
+                        creditos: '',
+                        tipo_asignatura: '',
+                        justificacion: '',
+                        objetivo_general: '',
+                        objetivos: [
+                            {
+                                unidad: '',
+                                semanas: '',
+                                actividad: ''
+                            }
+                        ],
+                        metodologia: '',
+                        criterios: [
+                            {
+                                nombre: '',
+                                ponderacion: '',
+                                semana: ''
+                            }
+                        ],
+                        bibliografia_basica: '',
+                        bibliografia_complementaria: '',
+                        archivo_pdf: null
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html> 
