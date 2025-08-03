@@ -916,6 +916,9 @@
                 }
             },
             mounted() {
+                // Cargar datos del localStorage
+                this.loadFromLocalStorage()
+                
                 // Simular carga inicial
                 setTimeout(() => {
                     this.isLoading = false
@@ -937,6 +940,7 @@
                     
                     if (user) {
                         this.currentUser = user
+                        this.saveToLocalStorage() // Guardar sesión
                         this.redirectByRole()
                     } else {
                         this.error = 'Credenciales incorrectas'
@@ -985,6 +989,7 @@
                     }
                     
                     this.users.push(newUser)
+                    this.saveToLocalStorage() // Guardar en localStorage
                     this.message = 'Registro exitoso. Puedes iniciar sesión.'
                     this.currentScreen = 'login'
                     this.loading = false
@@ -1011,13 +1016,17 @@
                 },
                 logout() {
                     this.currentUser = null
+                    this.saveToLocalStorage() // Guardar cambio
                     this.currentScreen = 'login'
                     this.message = 'Sesión cerrada exitosamente'
                 },
                 checkAuth() {
-                    // Aquí podrías verificar si hay una sesión guardada
-                    // Por ahora, siempre va al login
-                    this.currentScreen = 'login'
+                    // Verificar si hay una sesión guardada
+                    if (this.currentUser) {
+                        this.redirectByRole() // Ir directamente al dashboard
+                    } else {
+                        this.currentScreen = 'login'
+                    }
                 },
                 getCarreraBadgeClass(carrera) {
                     return carrera === 'Tecnologías de la Información' ? 'badge badge-primary' : 'badge badge-secondary'
@@ -1055,6 +1064,7 @@
                 deleteUser(userId) {
                     if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
                         this.users = this.users.filter(u => u.id !== userId)
+                        this.saveToLocalStorage() // Guardar cambio
                         this.message = 'Usuario eliminado exitosamente'
                     }
                 },
@@ -1062,6 +1072,7 @@
                     if (confirm('¿Estás seguro de que quieres limpiar toda la base de datos local?')) {
                         this.users = []
                         this.currentUser = null
+                        this.clearLocalStorage() // Limpiar localStorage
                         this.currentScreen = 'login'
                         this.message = 'Base de datos limpiada exitosamente'
                     }
@@ -1106,7 +1117,21 @@
                         return
                     }
                     
-                    // Simular envío
+                    // Crear nuevo sílabo
+                    const newSilabo = {
+                        id: Date.now().toString(),
+                        asignatura: this.silaboForm.asignatura,
+                        docente: this.currentUser.nombre,
+                        carrera: this.silaboForm.carrera,
+                        periodo: this.silaboForm.ciclo,
+                        url: '#', // URL temporal
+                        ...this.silaboForm // Incluir todos los datos del formulario
+                    }
+                    
+                    // Agregar a la lista de sílabos
+                    this.silabos.push(newSilabo)
+                    this.saveToLocalStorage() // Guardar en localStorage
+                    
                     alert('Formulario enviado a revisión exitosamente')
                     this.message = 'Sílabo enviado a revisión exitosamente'
                     
@@ -1144,6 +1169,55 @@
                         bibliografia_basica: '',
                         bibliografia_complementaria: '',
                         archivo_pdf: null
+                    }
+                },
+                
+                // Métodos para localStorage
+                saveToLocalStorage() {
+                    try {
+                        localStorage.setItem('silabos_users', JSON.stringify(this.users))
+                        localStorage.setItem('silabos_silabos', JSON.stringify(this.silabos))
+                        localStorage.setItem('silabos_currentUser', JSON.stringify(this.currentUser))
+                        console.log('✅ Datos guardados en localStorage')
+                    } catch (error) {
+                        console.error('❌ Error al guardar en localStorage:', error)
+                    }
+                },
+                
+                loadFromLocalStorage() {
+                    try {
+                        // Cargar usuarios
+                        const savedUsers = localStorage.getItem('silabos_users')
+                        if (savedUsers) {
+                            this.users = JSON.parse(savedUsers)
+                        }
+                        
+                        // Cargar sílabos
+                        const savedSilabos = localStorage.getItem('silabos_silabos')
+                        if (savedSilabos) {
+                            this.silabos = JSON.parse(savedSilabos)
+                        }
+                        
+                        // Cargar usuario actual
+                        const savedCurrentUser = localStorage.getItem('silabos_currentUser')
+                        if (savedCurrentUser) {
+                            this.currentUser = JSON.parse(savedCurrentUser)
+                        }
+                        
+                        console.log('✅ Datos cargados desde localStorage')
+                    } catch (error) {
+                        console.error('❌ Error al cargar desde localStorage:', error)
+                    }
+                },
+                
+                clearLocalStorage() {
+                    try {
+                        localStorage.removeItem('silabos_users')
+                        localStorage.removeItem('silabos_silabos')
+                        localStorage.removeItem('silabos_currentUser')
+                        console.log('🗑️ localStorage limpiado')
+                    } catch (error) {
+                        console.error('❌ Error al limpiar localStorage:', error)
                     }
                 }
             }
